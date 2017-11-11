@@ -80,7 +80,7 @@ class Manager{
         }
         return $counter;
     }
-    
+
     public function findTranslations($path = null)
     {
 
@@ -125,7 +125,7 @@ class Manager{
         // Return the number of found translations
         return count($keys);
     }
-    
+
     public function exportTranslations($group)
     {
         if(!in_array($group, $this->config['exclude_groups'])) {
@@ -145,10 +145,10 @@ class Manager{
             Translation::where('group', $group)->whereNotNull('value')->update(array('status' => Translation::STATUS_SAVED));
         }
     }
-    
+
     public function exportAllTranslations()
     {
-        $groups = Translation::whereNotNull('value')->select(DB::raw('DISTINCT `group`'))->get('group');
+        $groups = Translation::whereNotNull('value')->select(DB::raw('DISTINCT "group"'))->get('group');
 
         foreach($groups as $group){
             $this->exportTranslations($group->group);
