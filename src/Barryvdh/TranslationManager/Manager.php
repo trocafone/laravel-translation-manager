@@ -77,20 +77,22 @@ class Manager{
                         ));
                     }
 
-                    // Check if the database is different then the files
-                    $newStatus = $translation->value === $value ? Translation::STATUS_SAVED : Translation::STATUS_CHANGED;
-                    if($newStatus !== (int) $translation->status){
-                        $translation->status = $newStatus;
-                        echo "Status changed";
-                    }
 
                     // Only replace when empty, or explicitly told so
                     if($replace || !$translation->value && ($translation->value !== $value)) {
                         $translation->value = $value;
-                        echo "Value changed ({$translation->id}): db=[{$translation->value}], file=[{$value}]";
+                        //echo "Value changed ({$translation->id}): db=[{$translation->value}], file=[{$value}]";
                     }
 
-                    $translation->save();
+                    $dirty = $translation->getDirty();
+                    if ($translation->exists && !empty($dirty)) {
+                        echo "UPDATE {$locale}/{$group}/{$translation->key}\n";
+                    }
+                    else if (!$translation->exists) {
+                        echo "INSERT {$locale}/{$group}/{$translation->key}\n";
+                    }
+
+                    //$translation->save();
 
                     $counter++;
                 }
