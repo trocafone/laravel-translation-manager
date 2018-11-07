@@ -140,8 +140,8 @@ class TranslationsImporter
 
         if (!empty($sql)) {
             try {
-                //DB::unprepared(DB::raw($sql));
-                echo "{$sql}";
+                DB::unprepared(DB::raw($sql));
+                //echo "{$sql}";
             }
             catch (\Exception $ex) {
                 echo $ex;
@@ -150,10 +150,10 @@ class TranslationsImporter
 
         $updateCount = count($groupUpdates);
         $insertCount = count($groupInserts);
-        $total = $updateCount + $insertCount;
-        echo "{$locale}/{$groupName}: {$total}\n";
+        $totalUpdates = $updateCount + $insertCount;
+        echo "Updates {$locale}/{$groupName}: {$totalUpdates}\n";
 
-        return $updateCount + $insertCount;
+        return $totalUpdates;
 	}
 
 
