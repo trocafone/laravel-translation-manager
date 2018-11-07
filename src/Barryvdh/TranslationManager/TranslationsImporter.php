@@ -106,23 +106,13 @@ class TranslationsImporter
             	$newStatus = null;
 				$updateValues = ['id' => $dbTranslation->id];
 
-            	if ($value === $dbTranslation->value) {
-            		$newStatus = Translation::STATUS_SAVED;
-            	}
-            	else {
-            		$newStatus = Translation::STATUS_CHANGED;
-            	}
-
-            	if ($newStatus !== (int) $dbTranslation->status) {
-            		$updateValues['status'] = $newStatus;
-            	}
 
             	// Only replace when empty, or explicitly told so
-	            if ($replace || !$dbTranslation->value && $value !== $dbTranslation->value) {
+	            if ($replace || !$dbTranslation->value && ($value !== $dbTranslation->value)) {
 	                $updateValues['value'] = $value;
             	}
 
-            	if (array_key_exists('value', $updateValues) || array_key_exists('status', $updateValues)) {
+            	if (array_key_exists('value', $updateValues)) {
             		$groupUpdates[] = $updateValues;
             	}
             }
@@ -150,7 +140,8 @@ class TranslationsImporter
 
         if (!empty($sql)) {
             try {
-                DB::unprepared(DB::raw($sql));
+                //DB::unprepared(DB::raw($sql));
+                echo "{$sql}";
             }
             catch (\Exception $ex) {
                 echo $ex;
