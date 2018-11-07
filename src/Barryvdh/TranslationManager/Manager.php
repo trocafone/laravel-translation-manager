@@ -43,7 +43,7 @@ class Manager {
 
     public function importTranslations($replace = false)
     {
-        $this->importer->import($replace);
+        return $this->importer->import($replace);
     }
 
     public function findTranslations($path = null)

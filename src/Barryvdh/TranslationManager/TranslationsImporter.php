@@ -55,11 +55,13 @@ class TranslationsImporter
 
 	private function generateInserts($data)
 	{
-		$sql = 'INSERT INTO ltm_translations (status, locale, group, key, value) VALUES ';
+		$sql = 'INSERT INTO ltm_translations (status, locale, "group", key, value, created_at, updated_at) VALUES ';
 		$values = [];
 
 		foreach ($data as $entry) {
-			$values[] = "({$entry['status']}, '{$entry['locale']}', '{$entry['group']}', '{$entry['key']}', '{$entry['value']}')";
+            $sqlValue = pg_escape_string($entry['value']);
+            $sqlGroup = pg_escape_string($entry['group']);
+			$values[] = "({$entry['status']}, '{$entry['locale']}', '{$sqlGroup}', '{$entry['key']}', '{$sqlValue}', NOW(), NOW())";
 		}
 
 		$sql .= implode(",\n", $values) . ";\n";
@@ -71,14 +73,15 @@ class TranslationsImporter
 		$sql = '';
 
 		foreach ($data as $entry) {
-			$values = [];
+			$values = ["updated_at = NOW()"];
 			$thisSql = 'UPDATE ltm_translations SET ';
 
 			if (array_key_exists('status', $entry)) {
 				$values[] = "status = {$entry['status']}";
 			}
 			if (array_key_exists('value', $entry)) {
-				$values[] = "value = '{$entry['value']}'";
+                $sqlValue = pg_escape_string($entry['value']);
+				$values[] = "value = '{$sqlValue}'";
 			}
 
 			$sql .= $thisSql . implode(", ", $values) . " WHERE id = {$entry['id']};\n";
@@ -104,10 +107,10 @@ class TranslationsImporter
 				$updateValues = ['id' => $dbTranslation->id];
 
             	if ($value === $dbTranslation->value) {
-            		$newStatus = Translation::STATUS_CHANGED;
+            		$newStatus = Translation::STATUS_SAVED;
             	}
             	else {
-            		$newStatus = Translation::STATUS_SAVED;
+            		$newStatus = Translation::STATUS_CHANGED;
             	}
 
             	if ($newStatus !== (int) $dbTranslation->status) {
@@ -136,7 +139,7 @@ class TranslationsImporter
         }
 
 
-		$sql = '';
+        $sql = '';
         if (!empty($groupInserts)) {
         	$sql .= $this->generateInserts($groupInserts);
         }
@@ -145,9 +148,21 @@ class TranslationsImporter
         	$sql .= $this->generateUpdates($groupUpdates);
         }
 
-        echo "${sql}";
+        if (!empty($sql)) {
+            try {
+                DB::unprepared(DB::raw($sql));
+            }
+            catch (\Exception $ex) {
+                echo $ex;
+            }
+        }
 
-        return count($groupUpdates) + count($groupInserts);
+        $updateCount = count($groupUpdates);
+        $insertCount = count($groupInserts);
+        $total = $updateCount + $insertCount;
+        echo "{$locale}/{$groupName}: {$total}\n";
+
+        return $updateCount + $insertCount;
 	}
 
 
