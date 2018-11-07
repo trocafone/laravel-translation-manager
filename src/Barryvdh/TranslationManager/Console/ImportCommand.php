@@ -37,10 +37,21 @@ class ImportCommand extends Command {
      */
     public function fire()
     {
-        $replace = $this->option('replace');
-        $counter = $this->manager->importTranslations($replace);
-        $this->info('Done importing, processed '.$counter. ' items!');
+        try {
+            $timeStart = microtime(true);
 
+            $replace = $this->option('replace');
+            $counter = $this->manager->importTranslations($replace);
+
+
+            $timeEnd = microtime(true);
+            $executionSecs = ($timeEnd - $timeStart)/60;
+            $this->info('Done importing, processed '.$counter. ' items!');
+            $this->info('The process took '.$executionSecs. ' seconds!');
+        }
+        catch (\Exception $ex) {
+            echo $ex;
+        }
     }
 
     /**
