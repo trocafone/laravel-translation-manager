@@ -77,11 +77,23 @@ class Manager{
                         ));
                     }
 
+                    // Check if the database is different then the files
+                    $newStatus = $translation->value === $value ? Translation::STATUS_SAVED : Translation::STATUS_CHANGED;
+                    if($newStatus !== (int) $translation->status){
+                        $translation->status = $newStatus;
+                    }
+                    else {
+                        $translation = new Translation(array(
+                            'locale' => $locale,
+                            'group' => $group,
+                            'key' => $key,
+                        ));
+                    }
+
 
                     // Only replace when empty, or explicitly told so
                     if($replace || !$translation->value && ($translation->value !== $value)) {
                         $translation->value = $value;
-                        //echo "Value changed ({$translation->id}): db=[{$translation->value}], file=[{$value}]";
                     }
 
                     $dirty = $translation->getDirty();
@@ -92,7 +104,7 @@ class Manager{
                         echo "INSERT {$locale}/{$group}/{$translation->key}\n";
                     }
 
-                    //$translation->save();
+                    $translation->save();
 
                     $counter++;
                 }
