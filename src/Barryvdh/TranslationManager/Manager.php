@@ -7,7 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\Finder\Finder;
 
-class Manager{
+class Manager {
 
     /** @var \Illuminate\Foundation\Application  */
     protected $app;
@@ -18,12 +18,16 @@ class Manager{
 
     protected $config;
 
-    public function __construct(Application $app, Filesystem $files, Dispatcher $events)
+    /** @var \Illuminate\Events\Dispatcher  */
+    protected $importer;
+
+    public function __construct(Application $app, Filesystem $files, Dispatcher $events, TranslationsImporter $importer)
     {
         $this->app = $app;
         $this->files = $files;
         $this->events = $events;
         $this->config = $app['config']['laravel-translation-manager::config'];
+        $this->importer = $importer;
     }
 
     public function missingKey($namespace, $group, $key)
@@ -39,46 +43,7 @@ class Manager{
 
     public function importTranslations($replace = false)
     {
-        $counter = 0;
-        foreach($this->files->directories($this->app->make('path').'/lang') as $langPath){
-            $locale = basename($langPath);
-
-            foreach($this->files->files($langPath) as $file){
-
-                $info = pathinfo($file);
-                $group = $info['filename'];
-
-                if(in_array($group, $this->config['exclude_groups'])) {
-                    continue;
-                }
-
-                $translations = array_dot(\Lang::getLoader()->load($locale, $group));
-                foreach($translations as $key => $value){
-                    $value = (string) $value;
-                     $translation = Translation::firstOrNew(array(
-                        'locale' => $locale,
-                        'group' => $group,
-                        'key' => $key,
-                    ));
-
-                    // Check if the database is different then the files
-                    $newStatus = $translation->value === $value ? Translation::STATUS_SAVED : Translation::STATUS_CHANGED;
-                    if($newStatus !== (int) $translation->status){
-                        $translation->status = $newStatus;
-                    }
-
-                    // Only replace when empty, or explicitly told so
-                    if($replace || !$translation->value){
-                        $translation->value = $value;
-                    }
-
-                    $translation->save();
-
-                    $counter++;
-                }
-            }
-        }
-        return $counter;
+        $this->importer->import($replace);
     }
 
     public function findTranslations($path = null)
@@ -129,8 +94,9 @@ class Manager{
     public function exportTranslations($group)
     {
         if(!in_array($group, $this->config['exclude_groups'])) {
-            if($group == '*')
+            if($group == '*') {
                 return $this->exportAllTranslations();
+            }
 
             $tree = $this->makeTree(Translation::where('group', $group)->whereNotNull('value')->get());
 
