@@ -37,6 +37,16 @@ class Manager{
         }
     }
 
+    private function getDatabaseGroupTranslationsMap($locale, $groupName)
+    {
+        $translations = Translation::where('group', '=', $groupName)->where('locale', $locale)->get();
+        $map = [];
+        foreach ($translations as $t) {
+            $map[$t->key] = $t;
+        }
+        return $map;
+    }
+
     public function importTranslations($replace = false)
     {
         $counter = 0;
@@ -44,7 +54,6 @@ class Manager{
             $locale = basename($langPath);
 
             foreach($this->files->files($langPath) as $file){
-
                 $info = pathinfo($file);
                 $group = $info['filename'];
 
@@ -52,14 +61,21 @@ class Manager{
                     continue;
                 }
 
+                $dbTranslationsMap = $this->getDatabaseGroupTranslationsMap($locale, $group);
                 $translations = array_dot(\Lang::getLoader()->load($locale, $group));
                 foreach($translations as $key => $value){
                     $value = (string) $value;
-                     $translation = Translation::firstOrNew(array(
-                        'locale' => $locale,
-                        'group' => $group,
-                        'key' => $key,
-                    ));
+
+                    if (array_key_exists($key, $dbTranslationsMap)) {
+                        $translation = $dbTranslationsMap[$key];
+                    }
+                    else {
+                        $translation = new Translation(array(
+                            'locale' => $locale,
+                            'group' => $group,
+                            'key' => $key,
+                        ));
+                    }
 
                     // Check if the database is different then the files
                     $newStatus = $translation->value === $value ? Translation::STATUS_SAVED : Translation::STATUS_CHANGED;
@@ -78,6 +94,7 @@ class Manager{
                 }
             }
         }
+
         return $counter;
     }
 
