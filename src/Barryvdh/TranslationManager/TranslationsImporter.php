@@ -151,7 +151,9 @@ class TranslationsImporter
         $updateCount = count($groupUpdates);
         $insertCount = count($groupInserts);
         $totalUpdates = $updateCount + $insertCount;
-        echo "Updates {$locale}/{$groupName}: {$totalUpdates}\n";
+        if ($totalUpdates > 0) {
+            echo "Updates {$locale}/{$groupName}: {$totalUpdates}\n";
+        }
 
         return $totalUpdates;
 	}
